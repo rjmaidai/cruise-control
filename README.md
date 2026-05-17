@@ -1,66 +1,74 @@
-# CRUISE CONTROL — Production Package
+# CRUISE CONTROL
 
-Fertig vorbereitetes Paket für den Bau des Spiels mit **Claude Code**.
-Alles ist so abgelegt, dass Claude Code nicht raten muss.
+Point-and-Click-Adventure (Arthur / Beat). Pixelart, neon, trockene Comedy,
+synthetische Stimmen via Web Speech API. Vollständige Spec in `BUILD_SPEC.md`,
+komplette Logik + Dialoge in `gameflow.json`.
+
+## Schnellstart (lokal)
+
+Voraussetzung: Node.js (kommt bei macOS oft mit, sonst `brew install node`).
+
+```bash
+# 1. Spiel + Editor in einem Server (port 8000)
+node serve.mjs
+
+# Spiel:           http://localhost:8000/index.html
+# Hotspot-Editor:  http://localhost:8000/tools/hotspot-editor.html
+```
+
+Ohne Node: `python3 -m http.server 8000` aus diesem Ordner tut's auch.
+
+## Bedienung
+
+| Aktion | Eingabe |
+|---|---|
+| Hotspot klicken | Maus |
+| Inventar-Item auswählen | Klick im Inventar |
+| Item wieder abwählen | Rechtsklick / `Esc` |
+| Dialogzeile weiter | Klick / `Leertaste` / `Enter` |
+| Sprachausgabe an/aus | `T` oder Button oben rechts |
+| **Hotspot-Debug-Overlay** | **`H`** |
+
+## Workflow: Hotspots zeichnen
+
+1. `node serve.mjs` starten.
+2. `http://localhost:8000/tools/hotspot-editor.html` öffnen.
+3. Pro Screen die Rechtecke ziehen, im Dialog den Hotspot wählen.
+   Ziel: jeder Screen-Tab **grün**.
+4. „hotspots.json exportieren" → die Datei in den Projektordner legen
+   (`hotspots.json` ersetzen).
+5. Spiel neu laden, mit `H` verifizieren, dass die Boxen passen.
+
+## Struktur
 
 ```
 cruise-control/
-├── BUILD_SPEC.md          ← das Briefing. Claude Code zuerst hierauf ansetzen.
-├── gameflow.json          ← komplette Logik + ALLE Dialoge (maschinenlesbar)
-├── hotspots.json          ← Klickflächen (DU füllst die — siehe Schritt 1)
-├── hotspots.schema.json   ← Format-Referenz
+├── BUILD_SPEC.md            ← verbindliche Spec
+├── gameflow.json            ← Logik + alle Dialoge (READ FIRST)
+├── hotspots.json            ← Klickflächen (vom Editor exportiert)
+├── hotspots.schema.json     ← Format-Referenz
+├── index.html               ← Spiel-Entry
+├── serve.mjs                ← Dev-Server (Node, zero-deps)
+├── package.json             ← `npm run dev | editor | game`
+├── src/
+│   ├── game.js              ← komplette Engine (Loader, State, Dialog, TTS …)
+│   └── style.css
 ├── tools/
-│   └── hotspot-editor.html  ← dein Autoren-Tool
-├── assets/                ← finale Pixelart (nicht verändern)
-└── docs/gamebible.docx    ← Originalquelle (Referenz; JSON hat Vorrang)
+│   └── hotspot-editor.html  ← Autoren-Tool
+└── assets/
+    ├── start.png
+    ├── levels/   prolog · kapitel1 · kapitel2 · kapitel3 .png
+    ├── intro/    prolog · kapitel1 · kapitel2 · kapitel3 .png
+    └── winner/   arthur · beat .png
 ```
 
----
+Die PNGs sind teilweise WebP-kodiert (Endung bleibt `.png`) — Browser
+sniffen den Inhalt, das passt.
 
-## Schritt 1 — Hotspots zeichnen (du, ~15 Min)
+## Akzeptanzkriterien
 
-1. `tools/hotspot-editor.html` im Browser öffnen (Doppelklick reicht,
-   kein Server nötig).
-2. Oben die 5 Screens durchklicken: **start, prolog, kapitel1, kapitel2,
-   kapitel3**. (Win-Screen braucht keine Hotspots — Klick = überall.)
-3. Pro Screen die Liste rechts abarbeiten: mit der Maus ein Rechteck über
-   das Objekt **ziehen**, im Dialog den passenden Hotspot wählen. Box
-   anklicken = auswählen, **Entf** = löschen.
-4. Ziel: jeder Screen-Tab oben ist **grün ●** (alle Pflicht-Hotspots gesetzt).
-5. **„hotspots.json exportieren"** klicken und die heruntergeladene Datei
-   in den `cruise-control/`-Ordner legen (die Platzhalter-Datei ersetzen).
-
-> Koordinaten sind normalisiert (0–1) → das Spiel skaliert sie automatisch,
-> egal in welcher Auflösung. Du kannst jederzeit die Datei wieder „laden",
-> nachjustieren und neu exportieren, **ohne dass Code geändert werden muss**.
-
----
-
-## Schritt 2 — An Claude Code übergeben
-
-Claude Code im `cruise-control/`-Ordner starten und sinngemäß sagen:
-
-> „Lies `BUILD_SPEC.md` und baue das Spiel daraus. `gameflow.json` ist die
-> Logik-/Dialogquelle, `hotspots.json` liefert die Klickflächen. Assets sind
-> final. Halte dich an die Akzeptanzkriterien in §10 und teste beide Figuren
-> komplett durch."
-
-Das war's. `BUILD_SPEC.md` enthält Tech-Stack, State Machine, Dialog-System,
-TTS-Regeln, Puzzle-Logik und eine Checkliste.
-
----
-
-## Was schon drinsteckt (damit nichts verloren geht)
-
-- **Komplette Dialoge** beider Figuren, wortgleich aus deiner Game-Bibel,
-  inkl. aller Sackgassen-Antworten (`result: none`) und Lösungspfade.
-- **Sprache:** pro Figur/NPC ein TTS-Profil (Arthur hoch & schnell, Beat
-  tief & langsam). Text + Stimme gleichzeitig, abschaltbar. Regieanweisungen
-  werden angezeigt, aber nicht gesprochen.
-- **Puzzle-Verzweigungen** sauber modelliert — inkl. dem Trick, dass Beats
-  `SCHWEIGEN` bei Luca erst nach dem übergelaufenen Whirlpool funktioniert.
-- **Voice-Future-Proofing:** pro Dialogzeile kann später ein echtes Audio-File
-  TTS überschreiben — Architektur ist im Spec vorgesehen.
-
-Anmerkung zu Umlauten: `gameflow.json` schreibt teilweise `ae/oe/ue` (robust
-über alle TTS-Engines). Wortlaut und Bedeutung sind 1:1 deine Texte.
+Siehe `BUILD_SPEC.md` §10. Kurz: beide Figuren von Start bis Win
+durchspielbar, falsche Optionen ändern nichts, gesperrte Exits geben
+`locked_feedback`, `use(handtuch,whirlpool)` und `use(brot,kellner)`
+mit korrekten Vorbedingungen, Endbild passt zur Figur, Replay setzt
+sauber zurück.
