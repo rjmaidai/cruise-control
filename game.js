@@ -27,6 +27,29 @@ const $winCaption = document.getElementById('win-caption');
 const $winHint = document.getElementById('win-hint');
 const $loader = document.getElementById('loader');
 const $hud = document.getElementById('hud');
+const $player = document.getElementById('player');
+
+// Per-screen outfit: normal in prolog/kapitel2 (dinner), pool in kapitel1/kapitel3.
+// start + win = no player figure.
+const PLAYER_OUTFIT_BY_SCREEN = {
+  prolog:   'normal',
+  kapitel1: 'pool',
+  kapitel2: 'normal',
+  kapitel3: 'pool',
+};
+function updatePlayerFigure(){
+  if(!$player) return;
+  const outfit = PLAYER_OUTFIT_BY_SCREEN[State.screen];
+  if(!outfit || !State.character){
+    $player.classList.remove('show', 'pool');
+    $player.removeAttribute('src');
+    return;
+  }
+  const file = State.character + (outfit === 'pool' ? '_pool' : '') + '.png';
+  $player.src = 'assets/characters/' + file;
+  $player.classList.toggle('pool', outfit === 'pool');
+  $player.classList.add('show');
+}
 
 // ---- Game state ----
 const State = {
@@ -302,6 +325,7 @@ async function gotoScreen(id, opts){
   if(def.type === 'character_select'){
     await setBackground(def.background);
     renderTitleStart(def);
+    updatePlayerFigure();
     renderHotspots();
     if(window.Music) window.Music.playForScreen('start');
     return;
@@ -309,6 +333,7 @@ async function gotoScreen(id, opts){
   if(def.type === 'ending'){
     const e = def.endings[State.ending] || def.endings.arthur;
     await setBackground(e.background);
+    updatePlayerFigure();
     $winCaption.textContent = e.caption;
     $winCaption.classList.add('show');
     $winHint.classList.add('show');
@@ -326,6 +351,7 @@ async function gotoScreen(id, opts){
   }
   // room
   await setBackground(def.background);
+  updatePlayerFigure();
   renderHotspots();
   if(window.Music) window.Music.playForScreen(id);
 }

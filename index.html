@@ -66,8 +66,26 @@
     image-rendering:pixelated;
     pointer-events:none;
   }
+  /* Player figure (static cut-out, midground) */
+  #player{
+    position:absolute;
+    left:50%;
+    bottom:1%;
+    transform:translateX(-50%);
+    pointer-events:none;
+    image-rendering:pixelated;
+    z-index:5;
+    display:none;
+    /* default height — overridden per outfit */
+    height:40%;
+    width:auto;
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,.55));
+  }
+  #player.show{ display:block; }
+  #player.pool{ height:55%; }
   #hotspots{
     position:absolute;inset:0;
+    z-index:10;
   }
   .hotspot{
     position:absolute;
@@ -305,6 +323,7 @@
   <div id="app">
     <div id="stage">
       <img id="bg" alt="">
+      <img id="player" alt="">
       <div id="hotspots"></div>
       <div id="title"></div>
       <div id="inventory"></div>
