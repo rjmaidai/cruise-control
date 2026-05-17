@@ -100,9 +100,14 @@ const Voice = {
     if(speaker === '*') return Promise.resolve('regie'); // never spoken
     const key = speaker + '||' + (text||'').trim();
     const file = this.audioMap.get(key);
+    if(window.Music) window.Music.duck(0.25);
     return new Promise((resolve)=>{
       let finished = false;
-      const done = (reason)=>{ if(finished) return; finished = true; this.current = null; resolve(reason); };
+      const done = (reason)=>{
+        if(finished) return; finished = true; this.current = null;
+        if(window.Music) window.Music.duck(1);
+        resolve(reason);
+      };
       if(file){
         const audio = new Audio(file);
         this.current = audio;
@@ -298,6 +303,7 @@ async function gotoScreen(id, opts){
     await setBackground(def.background);
     renderTitleStart(def);
     renderHotspots();
+    if(window.Music) window.Music.playForScreen('start');
     return;
   }
   if(def.type === 'ending'){
@@ -308,6 +314,7 @@ async function gotoScreen(id, opts){
     $winHint.classList.add('show');
     clearHotspots();
     $inventory.innerHTML = '';
+    if(window.Music) window.Music.playForScreen('win');
     // click anywhere returns to start
     const clickHandler = ()=>{
       $stage.removeEventListener('click', clickHandler, true);
@@ -320,6 +327,7 @@ async function gotoScreen(id, opts){
   // room
   await setBackground(def.background);
   renderHotspots();
+  if(window.Music) window.Music.playForScreen(id);
 }
 
 function renderTitleStart(def){
@@ -333,16 +341,14 @@ function showIntroCard(src){
   return new Promise((resolve)=>{
     $introImg.src = src;
     $intro.classList.add('show');
-    let done = false;
-    const finish = ()=>{
-      if(done) return; done = true;
+    if(window.Music){ window.Music.playIntroJingle(); }
+    // Fixed 7s — the intro jingle is exactly that long. No click-skip.
+    const timer = setTimeout(()=>{
       $intro.classList.remove('show');
-      $intro.removeEventListener('click', finish, true);
-      clearTimeout(timer);
       resolve();
-    };
-    const timer = setTimeout(finish, 2800);
-    $intro.addEventListener('click', finish, true);
+    }, 7000);
+    // safety: if the scene tears down (e.g. dev reload), still resolve
+    $intro._cancelTimer = timer;
   });
 }
 
@@ -710,6 +716,17 @@ async function start(){
   Voice.init();
   Voice.setOn(true);
   bindGlobalInputs();
+  // Unlock + (re-)kick off music on the user's first interaction. The browser
+  // suspends AudioContext on page load — without this the title loop would
+  // never start.
+  const audioUnlock = ()=>{
+    if(window.Music){
+      window.Music.unlock();
+      if(State.screen) window.Music.playForScreen(State.screen);
+    }
+  };
+  document.addEventListener('click',   audioUnlock, { once: true });
+  document.addEventListener('keydown', audioUnlock, { once: true });
   $loader.classList.add('hidden');
   resetState();
   await gotoScreen('start', { skipIntro:true });
