@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cruise Control</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand"><b>CRUISE</b> <i>CONTROL</i></div>
+  <div id="goalBar" class="goal"></div>
+  <button id="ttsToggle" class="ttsToggle" type="button" title="Sprachausgabe an/aus (T)">
+    <span class="ico">🔊</span><span class="lbl">TTS</span>
+  </button>
+</header>
+
+<main id="stage">
+  <div id="frame">
+    <img id="bg" alt="">
+    <div id="hotspots"></div>
+    <div id="debugOverlay" hidden></div>
+    <div id="missingAsset" hidden>
+      <div class="msg">
+        <h2>Bild fehlt</h2>
+        <p id="missingPath"></p>
+        <p class="hint">
+          Leg die Datei laut <code>ASSETS_HINWEIS.md</code> in den passenden Ordner.<br>
+          Das Spiel funktioniert trotzdem weiter — Hotspots sind logisch aktiv.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="introCard" hidden>
+    <img id="introImg" alt="">
+    <div class="introHint">Klick oder warte …</div>
+  </div>
+
+  <div id="winCard" hidden>
+    <img id="winImg" alt="">
+    <div class="winCaption" id="winCaption"></div>
+    <div class="winHint">Klick irgendwo für Replay</div>
+  </div>
+</main>
+
+<footer id="bottombar">
+  <div id="inventory" class="inv" aria-label="Inventar"></div>
+
+  <div id="dialog" class="dlg" hidden>
+    <div id="dlgLine" class="dlgLine"></div>
+    <div id="dlgOptions" class="dlgOpts"></div>
+    <div id="dlgFooter" class="dlgFoot">
+      <span class="hint" id="dlgHint">Klick / Leertaste = weiter · S = überspringen</span>
+    </div>
+  </div>
+
+  <div id="flavorBox" class="flavor" hidden></div>
+</footer>
+
+<div id="debugBadge" class="debugBadge" hidden>HOTSPOTS · H</div>
+
+<script src="src/game.js" defer></script>
+</body>
+</html>

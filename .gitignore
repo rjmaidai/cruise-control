@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# assets/ is committed to the branch so the cloud container can pull them.
+# (We considered ignoring it, but the dev needs them on the server side too.)

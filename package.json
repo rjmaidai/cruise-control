@@ -1,0 +1,11 @@
+{
+  "name": "cruise-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cruise Control — Point & Click Adventure (Arthur / Beat).",
+  "scripts": {
+    "dev": "node serve.mjs",
+    "editor": "node serve.mjs --open=/tools/hotspot-editor.html",
+    "game": "node serve.mjs --open=/index.html"
+  }
+}

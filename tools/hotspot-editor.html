@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cruise Control — Hotspot Editor</title>
+<style>
+  :root{
+    --bg:#0b0712; --panel:#140d20; --panel2:#1c1330;
+    --ink:#f3e9ff; --dim:#9a86b8; --line:#2c1f44;
+    --pink:#ff3e88; --cyan:#34d6ff; --gold:#ffce4f; --green:#3ce6a4; --red:#ff5566;
+    --mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",system-ui,sans-serif;overflow:hidden}
+  .top{display:flex;align-items:center;gap:14px;padding:10px 16px;
+    border-bottom:1px solid var(--line);background:linear-gradient(90deg,#160e24,#0e0918)}
+  .logo{font-weight:800;letter-spacing:2px;font-size:15px}
+  .logo b{color:var(--pink)} .logo i{color:var(--cyan);font-style:normal}
+  .top .hint{color:var(--dim);font-size:12px;margin-left:auto}
+  .wrap{display:flex;height:calc(100% - 49px)}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;
+    padding:18px;overflow:auto;background:
+    radial-gradient(900px 500px at 50% -10%,#1a1030 0,transparent 60%),var(--bg)}
+  .frame{position:relative;line-height:0;box-shadow:0 0 0 1px var(--line),0 24px 60px #000a;
+    background:#000;max-width:100%;max-height:100%}
+  .frame img{display:block;max-width:100%;max-height:calc(100vh - 110px);user-select:none;-webkit-user-drag:none}
+  .frame svg{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+  .hs{fill:rgba(255,62,136,.14);stroke:var(--pink);stroke-width:2;vector-effect:non-scaling-stroke}
+  .hs.sel{fill:rgba(52,214,255,.20);stroke:var(--cyan)}
+  .hs.flavor{fill:rgba(255,206,79,.12);stroke:var(--gold)}
+  .hs.exit{fill:rgba(60,230,164,.12);stroke:var(--green)}
+  .lbl{font:600 13px var(--mono);fill:#fff;paint-order:stroke;
+    stroke:#000;stroke-width:4px;pointer-events:none}
+  .side{width:340px;flex:none;border-left:1px solid var(--line);
+    background:var(--panel);display:flex;flex-direction:column}
+  .side h2{font-size:11px;letter-spacing:2px;color:var(--dim);
+    margin:0;padding:14px 16px 8px;text-transform:uppercase}
+  .scrolly{overflow:auto;flex:1;padding:0 12px 16px}
+  select,button,input{font:inherit;color:var(--ink)}
+  .sc-pick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px 14px;border-bottom:1px solid var(--line)}
+  .sc{padding:7px 11px;border:1px solid var(--line);background:var(--panel2);
+    border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--dim)}
+  .sc.on{border-color:var(--pink);color:#fff;background:#27122b;
+    box-shadow:0 0 14px -4px var(--pink)}
+  .sc .dot{font-size:10px;margin-left:6px}
+  .req{border:1px solid var(--line);border-radius:9px;margin:8px 4px;
+    background:var(--panel2);overflow:hidden}
+  .req .r{display:flex;align-items:center;gap:9px;padding:9px 11px;
+    border-top:1px solid var(--line);font-size:13px}
+  .req .r:first-child{border-top:0}
+  .req .r .k{font:600 10px var(--mono);padding:2px 6px;border-radius:5px;
+    background:#23163a;color:var(--dim);text-transform:uppercase}
+  .req .r .nm{flex:1;font-weight:600}
+  .req .r .st{font-size:11px;font-weight:700}
+  .ok{color:var(--green)} .no{color:var(--red)}
+  .req .r button{margin-left:4px;background:none;border:1px solid var(--line);
+    color:var(--dim);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer}
+  .req .r button:hover{border-color:var(--red);color:var(--red)}
+  .extra h2{padding-top:14px}
+  .actions{padding:12px 16px;border-top:1px solid var(--line);
+    display:flex;flex-direction:column;gap:8px;background:var(--panel)}
+  .row{display:flex;gap:8px}
+  .btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel2);font-weight:700;cursor:pointer;font-size:13px}
+  .btn:hover{border-color:var(--cyan)}
+  .btn.primary{background:linear-gradient(90deg,#ff3e88,#b3245f);border-color:transparent;color:#fff}
+  .btn.primary:hover{filter:brightness(1.12)}
+  .btn.ghost{background:none}
+  .meta{font-size:11px;color:var(--dim);line-height:1.6;padding:0 16px 12px}
+  .pathbar{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .pathbar input{flex:1;background:#0c0815;border:1px solid var(--line);
+    border-radius:7px;padding:7px 9px;font:12px var(--mono)}
+  dialog{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    border-radius:12px;padding:0;width:340px;box-shadow:0 30px 80px #000c}
+  dialog::backdrop{background:#000a}
+  .dlg-h{padding:14px 18px;font-weight:800;border-bottom:1px solid var(--line)}
+  .dlg-b{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .dlg-b label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+  .dlg-b select,.dlg-b input{background:#0c0815;border:1px solid var(--line);
+    border-radius:7px;padding:9px}
+  .dlg-f{padding:12px 18px;display:flex;gap:8px;border-top:1px solid var(--line)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    background:#1c1330;border:1px solid var(--cyan);color:#fff;padding:10px 18px;
+    border-radius:9px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;
+    box-shadow:0 0 24px -6px var(--cyan)}
+  .toast.show{opacity:1}
+  .err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    text-align:center;color:var(--dim);font-size:13px;padding:30px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo"><b>CRUISE</b> <i>CONTROL</i> &nbsp;·&nbsp; HOTSPOT EDITOR</div>
+  <div class="hint">Ziehen = Hotspot zeichnen &nbsp;·&nbsp; Klick auf Box = auswählen &nbsp;·&nbsp; ENTF = löschen</div>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <div class="frame" id="frame">
+      <img id="bg" alt="">
+      <svg id="ov" preserveAspectRatio="none" viewBox="0 0 1000 1000"></svg>
+      <div class="err" id="err" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="sc-pick" id="scPick"></div>
+    <div class="pathbar">
+      <input id="basePath" value="../assets" title="Pfad zum assets-Ordner relativ zu dieser Datei">
+      <button class="btn" style="flex:none;padding:7px 12px" onclick="reloadBg()">↻</button>
+    </div>
+    <h2>Benötigte Hotspots</h2>
+    <div class="scrolly" id="reqList"></div>
+    <div class="actions">
+      <div class="row">
+        <button class="btn ghost" onclick="addCustom()">+ Eigener Hotspot</button>
+        <button class="btn ghost" onclick="importJson()">JSON laden</button>
+      </div>
+      <button class="btn primary" onclick="exportJson()">hotspots.json exportieren</button>
+      <div class="meta" style="padding:6px 0 0">
+        Koordinaten sind normalisiert (0–1) → auflösungs­unabhängig.
+        Diese Datei neben das Spiel legen und exportieren, wenn alle 5 Screens grün sind.
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept="application/json" hidden>
+
+<dialog id="dlg">
+  <div class="dlg-h">Hotspot zuweisen</div>
+  <div class="dlg-b">
+    <label>Welcher Hotspot ist das?</label>
+    <select id="dlgSel"></select>
+    <label>Oder eigener Name (optional)</label>
+    <input id="dlgCustom" placeholder="z.B. moewe">
+  </div>
+  <div class="dlg-f">
+    <button class="btn ghost" style="flex:1" onclick="cancelDlg()">Abbrechen</button>
+    <button class="btn primary" style="flex:1" onclick="confirmDlg()">Setzen</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---- Required-hotspot Spezifikation (aus gameflow.json gespiegelt) ---- */
+const SCREENS = {
+  start:    { img:"start.png", req:[
+    {id:"arthur",kind:"select",label:"Arthur (Figur links)"},
+    {id:"beat",  kind:"select",label:"Beat (Figur rechts)"} ]},
+  prolog:   { img:"levels/prolog.png", req:[
+    {id:"grenzbeamter",kind:"npc",   label:"Grenzbeamter"},
+    {id:"scanner",     kind:"exit",  label:"Scanner (Exit, gesperrt)"},
+    {id:"snackautomat",kind:"flavor",label:"Snackautomat"},
+    {id:"sitzbank",    kind:"flavor",label:"Sitzbank"} ]},
+  kapitel1: { img:"levels/kapitel1.png", req:[
+    {id:"luca",       kind:"npc",   label:"Luca Exotica"},
+    {id:"handtuch",   kind:"item",  label:"Handtuch (am Whirlpool)"},
+    {id:"whirlpool",  kind:"target",label:"Whirlpool"},
+    {id:"cocktailbar",kind:"flavor",label:"Cocktailbar"},
+    {id:"vip_ausgang",kind:"exit",  label:"VIP-Ausgang (Exit, gesperrt)"} ]},
+  kapitel2: { img:"levels/kapitel2.png", req:[
+    {id:"kellner", kind:"npc", label:"Kellner (blockiert Captain)"},
+    {id:"telefon", kind:"npc", label:"Telefon (an der Wand)"},
+    {id:"brotkorb",kind:"item",label:"Brotkorb"},
+    {id:"captain", kind:"exit",label:"Captain (Exit, gesperrt)"} ]},
+  kapitel3: { img:"levels/kapitel3.png", req:[
+    {id:"captain",  kind:"npc",   label:"Captain"},
+    {id:"dj_luca",  kind:"flavor",label:"DJ Luca (Bühne)"},
+    {id:"whirlpool",kind:"flavor",label:"Whirlpool"} ]},
+};
+const ORDER = ["start","prolog","kapitel1","kapitel2","kapitel3"];
+
+let cur = "start";
+let data = {};                       // { screen: [ {id,label,kind,x,y,w,h} ] }
+ORDER.forEach(s=>data[s]=[]);
+let selIdx = -1;
+
+const ov   = document.getElementById('ov');
+const bg   = document.getElementById('bg');
+const err  = document.getElementById('err');
+const SVGNS= "http://www.w3.org/2000/svg";
+
+/* ---------- screen tabs ---------- */
+function buildTabs(){
+  const p=document.getElementById('scPick'); p.innerHTML='';
+  ORDER.forEach(s=>{
+    const need=SCREENS[s].req.length, have=placedReqCount(s);
+    const done=have>=need;
+    const b=document.createElement('div');
+    b.className='sc'+(s===cur?' on':'');
+    b.innerHTML=s.toUpperCase()+`<span class="dot ${done?'ok':'no'}">${done?'●':have+'/'+need}</span>`;
+    b.onclick=()=>{cur=s;selIdx=-1;reloadBg();render();};
+    p.appendChild(b);
+  });
+}
+function placedReqCount(s){
+  const ids=new Set(data[s].map(h=>h.id));
+  return SCREENS[s].req.filter(r=>ids.has(r.id)).length;
+}
+
+/* ---------- background ---------- */
+function reloadBg(){
+  const base=document.getElementById('basePath').value.replace(/\/+$/,'');
+  err.style.display='none';
+  bg.style.visibility='hidden';
+  bg.onerror=()=>{ err.style.display='flex';
+    err.innerHTML=`Bild nicht gefunden:<br><b>${base}/${SCREENS[cur].img}</b><br><br>
+      Den <i>tools/</i>-Ordner neben den <i>assets/</i>-Ordner legen,<br>
+      oder oben den Pfad anpassen.`; };
+  bg.onload=()=>{ bg.style.visibility='visible'; };
+  bg.src = base + "/" + SCREENS[cur].img + "?v=" + Date.now();
+}
+
+/* ---------- coordinate helpers (normalized 0..1) ---------- */
+function pt(e){
+  const r=ov.getBoundingClientRect();
+  const cx=(e.touches?e.touches[0].clientX:e.clientX);
+  const cy=(e.touches?e.touches[0].clientY:e.clientY);
+  return { x:Math.min(1,Math.max(0,(cx-r.left)/r.width)),
+           y:Math.min(1,Math.max(0,(cy-r.top)/r.height)) };
+}
+
+/* ---------- draw / drag ---------- */
+let drawing=null;
+ov.addEventListener('mousedown',startDraw);
+ov.addEventListener('touchstart',startDraw,{passive:false});
+function startDraw(e){
+  if(e.target.classList.contains('hs')) return;   // clicking existing box selects it
+  e.preventDefault();
+  const p=pt(e); drawing={x0:p.x,y0:p.y,x1:p.x,y1:p.y};
+  window.addEventListener('mousemove',moveDraw);
+  window.addEventListener('touchmove',moveDraw,{passive:false});
+  window.addEventListener('mouseup',endDraw);
+  window.addEventListener('touchend',endDraw);
+}
+function moveDraw(e){ if(!drawing)return; e.preventDefault();
+  const p=pt(e); drawing.x1=p.x; drawing.y1=p.y; render(); }
+function endDraw(e){
+  window.removeEventListener('mousemove',moveDraw);
+  window.removeEventListener('touchmove',moveDraw);
+  window.removeEventListener('mouseup',endDraw);
+  window.removeEventListener('touchend',endDraw);
+  if(!drawing) return;
+  const x=Math.min(drawing.x0,drawing.x1), y=Math.min(drawing.y0,drawing.y1),
+        w=Math.abs(drawing.x1-drawing.x0), h=Math.abs(drawing.y1-drawing.y0);
+  drawing=null;
+  if(w<0.012||h<0.012){ render(); return; }   // ignore micro-drags
+  pending={x,y,w,h}; openDlg();
+}
+
+/* ---------- assign dialog ---------- */
+let pending=null;
+function openDlg(){
+  const sel=document.getElementById('dlgSel'); sel.innerHTML='';
+  const placed=new Set(data[cur].map(h=>h.id));
+  SCREENS[cur].req.forEach(r=>{
+    const o=document.createElement('option');
+    o.value=r.id; o.textContent=r.label+(placed.has(r.id)?'  (ersetzt vorhandene)':'');
+    o.dataset.kind=r.kind; o.dataset.label=r.label;
+    sel.appendChild(o);
+  });
+  const o2=document.createElement('option');
+  o2.value="__custom"; o2.textContent="— eigener Hotspot —"; sel.appendChild(o2);
+  document.getElementById('dlgCustom').value='';
+  document.getElementById('dlg').showModal();
+}
+function cancelDlg(){ pending=null; document.getElementById('dlg').close(); render(); }
+function confirmDlg(){
+  const sel=document.getElementById('dlgSel');
+  const custom=document.getElementById('dlgCustom').value.trim();
+  let id,label,kind;
+  if(custom){ id=custom.toLowerCase().replace(/\s+/g,'_'); label=custom; kind='custom'; }
+  else {
+    const opt=sel.selectedOptions[0];
+    if(opt.value==="__custom"){ toast("Bitte Namen eingeben oder Hotspot wählen"); return; }
+    id=opt.value; label=opt.dataset.label; kind=opt.dataset.kind;
+  }
+  data[cur]=data[cur].filter(h=>h.id!==id);             // replace if same id
+  data[cur].push({id,label,kind,...round(pending)});
+  pending=null; document.getElementById('dlg').close();
+  selIdx=data[cur].length-1; buildTabs(); render(); toast("Hotspot „"+label+"“ gesetzt");
+}
+function round(b){ const r=v=>Math.round(v*1e4)/1e4;
+  return {x:r(b.x),y:r(b.y),w:r(b.w),h:r(b.h)}; }
+
+/* ---------- render ---------- */
+function render(){
+  while(ov.firstChild) ov.removeChild(ov.firstChild);
+  data[cur].forEach((h,i)=>{
+    const g=document.createElementNS(SVGNS,'g');
+    const rc=document.createElementNS(SVGNS,'rect');
+    rc.setAttribute('x',h.x*1000); rc.setAttribute('y',h.y*1000);
+    rc.setAttribute('width',h.w*1000); rc.setAttribute('height',h.h*1000);
+    rc.setAttribute('class','hs '+(i===selIdx?'sel':(h.kind||''))) ;
+    rc.style.cursor='pointer';
+    rc.addEventListener('mousedown',ev=>{ev.stopPropagation();selIdx=i;render();});
+    g.appendChild(rc);
+    const t=document.createElementNS(SVGNS,'text');
+    t.setAttribute('x',h.x*1000+8); t.setAttribute('y',h.y*1000+20);
+    t.setAttribute('class','lbl'); t.textContent=h.label;
+    g.appendChild(t); ov.appendChild(g);
+  });
+  if(drawing){
+    const x=Math.min(drawing.x0,drawing.x1),y=Math.min(drawing.y0,drawing.y1),
+          w=Math.abs(drawing.x1-drawing.x0),h=Math.abs(drawing.y1-drawing.y0);
+    const rc=document.createElementNS(SVGNS,'rect');
+    rc.setAttribute('x',x*1000);rc.setAttribute('y',y*1000);
+    rc.setAttribute('width',w*1000);rc.setAttribute('height',h*1000);
+    rc.setAttribute('class','hs'); rc.setAttribute('stroke-dasharray','6 4');
+    ov.appendChild(rc);
+  }
+  buildReq();
+}
+function buildReq(){
+  const box=document.getElementById('reqList'); box.innerHTML='';
+  const placed=Object.fromEntries(data[cur].map((h,i)=>[h.id,i]));
+  const wrap=document.createElement('div'); wrap.className='req';
+  SCREENS[cur].req.forEach(r=>{
+    const on = r.id in placed;
+    const row=document.createElement('div'); row.className='r';
+    row.innerHTML=`<span class="k">${r.kind}</span>
+      <span class="nm">${r.label}</span>
+      <span class="st ${on?'ok':'no'}">${on?'✓ gesetzt':'fehlt'}</span>`;
+    if(on){ const b=document.createElement('button'); b.textContent='✕';
+      b.onclick=()=>{ data[cur]=data[cur].filter(h=>h.id!==r.id);
+        selIdx=-1; buildTabs(); render(); };
+      row.appendChild(b);
+      row.onclick=e=>{ if(e.target.tagName!=='BUTTON'){ selIdx=placed[r.id]; render(); } };
+    }
+    wrap.appendChild(row);
+  });
+  box.appendChild(wrap);
+  // custom / extra hotspots
+  const extra=data[cur].filter(h=>!SCREENS[cur].req.some(r=>r.id===h.id));
+  if(extra.length){
+    const h2=document.createElement('h2'); h2.textContent='Eigene Hotspots';
+    h2.style.padding='14px 4px 4px'; box.appendChild(h2);
+    const w2=document.createElement('div'); w2.className='req';
+    extra.forEach(h=>{
+      const i=data[cur].indexOf(h);
+      const row=document.createElement('div'); row.className='r';
+      row.innerHTML=`<span class="k">${h.kind||'custom'}</span><span class="nm">${h.label}</span>`;
+      const b=document.createElement('button'); b.textContent='✕';
+      b.onclick=()=>{ data[cur].splice(i,1); selIdx=-1; render(); };
+      row.appendChild(b); w2.appendChild(row);
+    });
+    box.appendChild(w2);
+  }
+}
+function addCustom(){ pending={x:0.4,y:0.4,w:0.2,h:0.2};
+  document.getElementById('dlgCustom').focus?.(); openDlg();
+  toast("Box wird mittig gesetzt — danach mit Ziehen anpassen"); }
+
+/* ---------- delete with keyboard ---------- */
+window.addEventListener('keydown',e=>{
+  if((e.key==='Delete'||e.key==='Backspace')&&selIdx>-1){
+    data[cur].splice(selIdx,1); selIdx=-1; buildTabs(); render();
+  }
+});
+
+/* ---------- import / export ---------- */
+function exportJson(){
+  const out={ _format:"cruise-control.hotspots/v1",
+              _note:"Normalisierte Koordinaten 0..1, Ursprung oben-links.",
+              screens:{} };
+  ORDER.forEach(s=>{ out.screens[s]=data[s]; });
+  const miss=[];
+  ORDER.forEach(s=>{ if(placedReqCount(s)<SCREENS[s].req.length)
+    miss.push(s+" ("+placedReqCount(s)+"/"+SCREENS[s].req.length+")"); });
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download="hotspots.json"; a.click();
+  toast(miss.length? "Exportiert — noch unvollständig: "+miss.join(", ")
+                    : "Exportiert — alle Screens vollständig ✓");
+}
+function importJson(){ document.getElementById('file').click(); }
+document.getElementById('file').addEventListener('change',ev=>{
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const j=JSON.parse(r.result); const src=j.screens||j;
+      ORDER.forEach(s=>{ if(Array.isArray(src[s])) data[s]=src[s]; });
+      selIdx=-1; buildTabs(); render(); toast("hotspots.json geladen");
+    }catch(_){ toast("Datei konnte nicht gelesen werden"); } };
+  r.readAsText(f); ev.target.value='';
+});
+
+/* ---------- toast ---------- */
+let tT;
+function toast(m){ const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2600); }
+
+/* ---------- boot ---------- */
+buildTabs(); reloadBg(); render();
+</script>
+</body>
+</html>

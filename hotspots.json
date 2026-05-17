@@ -1,0 +1,11 @@
+{
+  "_format": "cruise-control.hotspots/v1",
+  "_note": "PLATZHALTER — noch leer. Mit tools/hotspot-editor.html befuellen und diese Datei ueberschreiben.",
+  "screens": {
+    "start": [],
+    "prolog": [],
+    "kapitel1": [],
+    "kapitel2": [],
+    "kapitel3": []
+  }
+}
