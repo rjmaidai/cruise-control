@@ -606,6 +606,18 @@ function pickOption(options){
     $options.innerHTML = '';
     $dialogText.textContent = '';
     $dialogAdvance.style.display = 'none';
+    let finished = false;
+    const finish = (val)=>{
+      if(finished) return;
+      finished = true;
+      document.removeEventListener('keydown', onKey, true);
+      $options.classList.remove('show');
+      resolve(val);
+    };
+    const onKey = (ev)=>{
+      if(ev.key === 'Escape'){ ev.stopPropagation(); finish(null); }
+    };
+    document.addEventListener('keydown', onKey, true);
     for(const o of visible){
       const b = document.createElement('button');
       b.className = 'opt' + (o.id==='SCHWEIGEN' ? ' schweigen' : '') + (o.id==='ENDE' ? ' ende' : '');
@@ -613,11 +625,20 @@ function pickOption(options){
       b.textContent = o.label || o.id;
       b.addEventListener('click', (ev)=>{
         ev.stopPropagation();
-        $options.classList.remove('show');
-        resolve(o);
+        finish(o);
       });
       $options.appendChild(b);
     }
+    // last entry: "Verlassen" — always available, leaves the dialog without effect
+    const leave = document.createElement('button');
+    leave.className = 'opt leave';
+    leave.type = 'button';
+    leave.textContent = '(weggehen)';
+    leave.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      finish(null);
+    });
+    $options.appendChild(leave);
     $options.classList.add('show');
   });
 }
