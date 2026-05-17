@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cruise Control</title>
+<style>
+  :root{
+    --neon-pink:#ff3aa6;
+    --neon-cyan:#5ef0ff;
+    --neon-yellow:#ffe75c;
+    --neon-purple:#b85bff;
+    --bg-deep:#0a0414;
+    --bg-mid:#160728;
+    --text:#f4ecff;
+    --text-dim:#a89cc0;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:#000;
+    color:var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+    overflow:hidden;
+    user-select:none;
+    -webkit-user-select:none;
+    image-rendering:pixelated;
+  }
+  body{
+    background:
+      radial-gradient(ellipse at top, #2a0f4a 0%, #0a0414 60%, #000 100%);
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* CRT scanlines */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 2px, transparent 2px 4px);
+    mix-blend-mode:multiply;opacity:.35;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9998;
+    box-shadow:inset 0 0 180px 30px rgba(0,0,0,.85);
+  }
+
+  #app{
+    position:relative;
+    width:100vw;height:100vh;
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* The stage is the letterboxed playfield. Aspect ratio set per background image. */
+  #stage{
+    position:relative;
+    background:#000;
+    box-shadow:0 0 60px rgba(255,58,166,.18), 0 0 12px rgba(94,240,255,.12) inset;
+    overflow:hidden;
+    /* default 16:9, JS will adjust to image aspect on load */
+    aspect-ratio: 16 / 9;
+    width:min(100vw, calc(100vh * 16/9));
+    height:auto;
+    max-height:100vh;
+    image-rendering:pixelated;
+  }
+  #bg{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:contain;
+    image-rendering:pixelated;
+    pointer-events:none;
+  }
+  #hotspots{
+    position:absolute;inset:0;
+  }
+  .hotspot{
+    position:absolute;
+    cursor:pointer;
+    border:2px solid transparent;
+    transition:border-color .12s, background .12s;
+  }
+  .hotspot:hover{
+    border-color:rgba(94,240,255,.55);
+    background:rgba(94,240,255,.06);
+  }
+  .hotspot.locked:hover{
+    border-color:rgba(255,58,166,.55);
+    background:rgba(255,58,166,.06);
+  }
+  .hotspot[data-kind="select"]:hover{
+    border-color:rgba(255,231,92,.7);
+    background:rgba(255,231,92,.06);
+  }
+  /* debug mode shows rects always */
+  #hotspots.debug .hotspot{
+    border-color:rgba(94,240,255,.85);
+    background:rgba(94,240,255,.08);
+  }
+  #hotspots.debug .hotspot::after{
+    content: attr(data-label) " [" attr(data-kind) "]";
+    position:absolute;left:0;top:-1.2em;
+    font-size:11px;color:var(--neon-cyan);
+    background:rgba(0,0,0,.7);padding:1px 4px;
+    white-space:nowrap;
+    text-shadow:0 0 4px var(--neon-cyan);
+  }
+  #hotspots.debug .hotspot.locked{
+    border-color:rgba(255,58,166,.85);
+    background:rgba(255,58,166,.10);
+  }
+
+  /* Cursor when an item is active */
+  body.use-mode #hotspots{ cursor: cell; }
+  body.use-mode .hotspot{ cursor: cell; }
+
+  /* Inventory bar */
+  #inventory{
+    position:absolute;top:8px;left:8px;right:160px;
+    display:flex;gap:6px;align-items:center;
+    pointer-events:none;
+    z-index:50;
+  }
+  .inv-item{
+    pointer-events:auto;
+    background:rgba(10,4,20,.85);
+    border:1px solid var(--neon-purple);
+    color:var(--text);
+    padding:4px 10px;
+    font-size:12px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    cursor:pointer;
+    text-shadow:0 0 4px var(--neon-purple);
+    box-shadow:0 0 8px rgba(184,91,255,.4);
+  }
+  .inv-item.active{
+    background:var(--neon-purple);
+    color:#000;
+    text-shadow:none;
+    box-shadow:0 0 14px var(--neon-purple);
+  }
+  .inv-item:hover{ border-color:var(--neon-cyan); }
+
+  /* TTS toggle */
+  #tts-toggle{
+    position:absolute;top:8px;right:8px;
+    background:rgba(10,4,20,.85);
+    border:1px solid var(--neon-cyan);
+    color:var(--neon-cyan);
+    font-family:inherit;
+    font-size:12px;
+    padding:4px 10px;
+    letter-spacing:.08em;
+    cursor:pointer;
+    text-shadow:0 0 4px var(--neon-cyan);
+    z-index:50;
+  }
+  #tts-toggle.off{
+    border-color:var(--text-dim);
+    color:var(--text-dim);
+    text-shadow:none;
+  }
+
+  /* Dialog */
+  #dialog{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    background:linear-gradient(to top, rgba(0,0,0,.92) 60%, rgba(0,0,0,.0));
+    padding:14px 18px 16px;
+    z-index:40;
+    display:none;
+    min-height:80px;
+  }
+  #dialog.show{ display:block; }
+  #dialog-text{
+    font-size:16px;
+    line-height:1.45;
+    min-height:1.4em;
+    color:var(--text);
+    cursor:pointer;
+  }
+  #dialog-text .speaker{
+    font-weight:700;
+    color:var(--neon-cyan);
+    text-shadow:0 0 6px rgba(94,240,255,.7);
+    margin-right:6px;
+  }
+  #dialog-text.regie{
+    font-style:italic;
+    color:var(--text-dim);
+  }
+  #dialog-advance{
+    position:absolute;
+    right:14px;bottom:8px;
+    font-size:11px;color:var(--text-dim);
+    letter-spacing:.1em;
+  }
+  #options{
+    display:none;
+    margin-top:10px;
+    flex-direction:column;
+    gap:4px;
+  }
+  #options.show{ display:flex; }
+  .opt{
+    background:rgba(10,4,20,.6);
+    border:1px solid var(--neon-pink);
+    color:var(--text);
+    padding:6px 12px;
+    font-family:inherit;
+    font-size:14px;
+    text-align:left;
+    cursor:pointer;
+    letter-spacing:.02em;
+  }
+  .opt:hover{
+    background:rgba(255,58,166,.18);
+    text-shadow:0 0 4px var(--neon-pink);
+  }
+  .opt.schweigen{ border-color:var(--neon-purple); }
+  .opt.schweigen:hover{ background:rgba(184,91,255,.18); text-shadow:0 0 4px var(--neon-purple); }
+  .opt.ende{ border-color:var(--neon-yellow); }
+  .opt.ende:hover{ background:rgba(255,231,92,.18); text-shadow:0 0 4px var(--neon-yellow); }
+
+  /* Title overlay (instructions on start screen) */
+  #title{
+    position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    text-align:center;pointer-events:none;z-index:30;
+    text-shadow:0 0 12px var(--neon-pink), 0 0 4px #000;
+  }
+  #title h1{
+    margin:0;font-size:38px;letter-spacing:.18em;
+    color:var(--neon-pink);
+    font-weight:900;
+  }
+  #title .subtitle{
+    margin-top:4px;font-size:12px;letter-spacing:.4em;color:var(--neon-cyan);
+    text-shadow:0 0 8px var(--neon-cyan);
+  }
+  #title .pick{
+    margin-top:6px;font-size:14px;letter-spacing:.3em;color:var(--neon-yellow);
+    text-shadow:0 0 6px var(--neon-yellow);
+  }
+
+  /* Intro card overlay */
+  #intro-card{
+    position:absolute;inset:0;
+    background:#000;
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:60;
+    cursor:pointer;
+  }
+  #intro-card.show{ display:flex; }
+  #intro-card img{
+    max-width:100%;max-height:100%;
+    object-fit:contain;
+    image-rendering:pixelated;
+  }
+  #intro-card .hint{
+    position:absolute;bottom:14px;left:0;right:0;
+    text-align:center;
+    font-size:11px;letter-spacing:.3em;color:var(--neon-cyan);
+    text-shadow:0 0 6px var(--neon-cyan);
+  }
+
+  /* Win caption */
+  #win-caption{
+    position:absolute;top:18%;left:0;right:0;text-align:center;
+    font-size:42px;letter-spacing:.25em;
+    color:var(--neon-yellow);
+    text-shadow:0 0 18px var(--neon-yellow), 0 0 4px #000;
+    z-index:30;pointer-events:none;
+    font-weight:900;
+    display:none;
+  }
+  #win-caption.show{ display:block; }
+  #win-hint{
+    position:absolute;bottom:14px;left:0;right:0;text-align:center;
+    font-size:11px;letter-spacing:.3em;color:var(--neon-cyan);
+    text-shadow:0 0 6px var(--neon-cyan);
+    z-index:30;
+    display:none;
+  }
+  #win-hint.show{ display:block; }
+
+  /* Debug HUD */
+  #hud{
+    position:absolute;bottom:8px;left:8px;
+    font-size:10px;color:var(--text-dim);
+    letter-spacing:.1em;z-index:55;pointer-events:none;
+    text-shadow:0 0 4px #000;
+    display:none;
+  }
+  #hud.show{ display:block; }
+
+  /* Loading */
+  #loader{
+    position:absolute;inset:0;background:#000;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--neon-cyan);font-size:14px;letter-spacing:.3em;
+    text-shadow:0 0 8px var(--neon-cyan);
+    z-index:200;
+  }
+  #loader.hidden{ display:none; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <img id="bg" alt="">
+      <div id="hotspots"></div>
+      <div id="title"></div>
+      <div id="inventory"></div>
+      <button id="tts-toggle" type="button" title="Stimme an/aus (M)">STIMME: AN</button>
+      <div id="hud"></div>
+      <div id="dialog">
+        <div id="dialog-text"></div>
+        <div id="options"></div>
+        <div id="dialog-advance">[KLICK FUER WEITER]</div>
+      </div>
+      <div id="win-caption"></div>
+      <div id="win-hint">[KLICK = NEUSTART]</div>
+      <div id="intro-card">
+        <img alt="">
+        <div class="hint">[KLICK FUER WEITER]</div>
+      </div>
+      <div id="loader">LADE...</div>
+    </div>
+  </div>
+
+  <!-- Data shims (work on file:// — no fetch needed) -->
+  <script src="data/gameflow.js"></script>
+  <script src="data/hotspots.js"></script>
+  <script src="data/voice_manifest.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

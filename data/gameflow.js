@@ -1,0 +1,1141 @@
+// AUTO-GENERATED from /home/user/cruise-control/gameflow.json. 
+window.GAMEFLOW = {
+  "meta": {
+    "title": "Cruise Control",
+    "subtitle": "Ein Point-and-Click-Adventure",
+    "ship": "M.S. EUPHORIA",
+    "language": "de",
+    "voice": {
+      "enabled": true,
+      "engine": "browser SpeechSynthesis (Web Speech API)",
+      "rule": "Jede gesprochene Dialogzeile wird gleichzeitig als Text angezeigt UND per TTS gesprochen. Regie-/Aktionszeilen (speaker '*') werden NUR angezeigt, NICHT gesprochen. TTS ist abschaltbar (Toggle oben rechts, Default an).",
+      "fallback": "Wenn keine de-DE Stimme verfuegbar ist: erste verfuegbare Stimme nehmen, Spiel laeuft trotzdem (Text bleibt fuehrend).",
+      "future_proof": "Architektur so bauen, dass pro Dialogzeile optional ein audio-File-Pfad TTS ueberschreiben kann (fuer spaetere echte Stimmen)."
+    },
+    "screen_order": [
+      "start",
+      "prolog",
+      "kapitel1",
+      "kapitel2",
+      "kapitel3",
+      "win"
+    ]
+  },
+  "characters": {
+    "arthur": {
+      "name": "Arthur",
+      "tagline": "Der Sofort-Aufleger",
+      "rules": [
+        "hohe Stimme",
+        "englischer Akzent / viele Anglizismen",
+        "redet viel zu lange",
+        "rundliche Silhouette, kleiner als Beat",
+        "Spezialfaehigkeit: kann Gespraeche sofort beenden"
+      ],
+      "tts": {
+        "lang": "de-DE",
+        "pitch": 1.35,
+        "rate": 1.08
+      }
+    },
+    "beat": {
+      "name": "Beat",
+      "tagline": "Der Zermuerbende",
+      "rules": [
+        "tiefe aggressive Stimme",
+        "kurze harte Saetze",
+        "militaerische Haltung",
+        "groesser als Arthur",
+        "Spezialfaehigkeit: psychologischer Druck (SCHWEIGEN als Aktion)"
+      ],
+      "tts": {
+        "lang": "de-DE",
+        "pitch": 0.6,
+        "rate": 0.92
+      }
+    }
+  },
+  "npc_voices": {
+    "Grenzbeamter": {
+      "lang": "de-DE",
+      "pitch": 0.9,
+      "rate": 1.0
+    },
+    "Luca": {
+      "lang": "de-DE",
+      "pitch": 1.15,
+      "rate": 1.05
+    },
+    "Kellner": {
+      "lang": "de-DE",
+      "pitch": 0.95,
+      "rate": 1.0
+    },
+    "Captain": {
+      "lang": "de-DE",
+      "pitch": 0.8,
+      "rate": 0.95
+    }
+  },
+  "visual_rules": [
+    "alle Raeume im selben Pixelart-Stil (Assets sind FINAL, NICHT neu generieren oder filtern)",
+    "Hintergrundbild fuellt die Buehne, Seitenverhaeltnis erhalten (letterbox statt verzerren)",
+    "Hotspots duerfen sich nie ueberschneiden",
+    "Vordergrund = Puzzleobjekte, Mittelgrund = NPCs, Hintergrund = Atmosphaere",
+    "Dialogzeilen erscheinen als untertitel-artige Textbox unten, Sprecher-Name fett davor",
+    "Regiezeilen (speaker '*') kursiv, ohne Namen, ohne Stimme"
+  ],
+  "interaction_model": {
+    "verbs": [
+      "look",
+      "talk",
+      "take",
+      "use"
+    ],
+    "default_click": "Einfacher Klick auf Hotspot = kontextuelle Standardaktion. npc->talk, item->take, exit->goto (wenn entsperrt) sonst locked_feedback, flavor->look.",
+    "use_with": "Inventar-Item anklicken -> aktiv (cursor zeigt Item) -> auf Ziel-Hotspot klicken loest use(item,target) aus.",
+    "schweigen": "BEAT-only. Erscheint als eigene Dialogoption WO im Flow vorgesehen (option id 'SCHWEIGEN').",
+    "gespraech_beenden": "ARTHUR-only. Beendet Telefon/Dialog sofort WO vorgesehen (option id 'ENDE').",
+    "locked_exit_feedback": "Klick auf gesperrten Exit -> kurze Spruchblase des aktiven Chars (screen.locked_feedback), KEIN Szenenwechsel.",
+    "result_none": "result.type 'none' -> Dialog endet, NPC kehrt zur Optionsliste zurueck. Nichts veraendert sich.",
+    "result_solve": "result.type 'solve' -> effects ausfuehren (set_flag, unlock_hotspot, give_item, remove_item, goto, ending). Danach Dialog geschlossen."
+  },
+  "inventory": {
+    "items": [
+      {
+        "id": "handtuch",
+        "label": "Handtuch",
+        "found_in": "kapitel1",
+        "icon_hint": "blau-weiss gestreiftes Handtuch am Whirlpool-Rand"
+      },
+      {
+        "id": "brot",
+        "label": "Brot",
+        "found_in": "kapitel2",
+        "icon_hint": "Broetchen aus dem Brotkorb links"
+      },
+      {
+        "id": "armband",
+        "label": "Lucas Armband",
+        "found_in": "kapitel1",
+        "story_token": true,
+        "icon_hint": "goldenes Armband"
+      }
+    ]
+  },
+  "screens": [
+    {
+      "id": "start",
+      "type": "character_select",
+      "background": "assets/start.png",
+      "music": "Titel-Loop, neon synthwave 8-bit",
+      "instruction_text": "WAEHLE DEINEN CHARAKTER",
+      "required_hotspots": [
+        {
+          "id": "arthur",
+          "kind": "select",
+          "label": "Arthur",
+          "on_click": {
+            "set_character": "arthur",
+            "goto": "prolog"
+          }
+        },
+        {
+          "id": "beat",
+          "kind": "select",
+          "label": "Beat",
+          "on_click": {
+            "set_character": "beat",
+            "goto": "prolog"
+          }
+        }
+      ],
+      "notes": "Keine Menues, keine Dropdowns. Nur die zwei Figuren klickbar. Gewaehlter Charakter gilt das ganze Spiel und bestimmt Dialogpfad + Endbild."
+    },
+    {
+      "id": "prolog",
+      "type": "room",
+      "title": "Prolog - Grenzkontrolle",
+      "intro_card": "assets/intro/prolog.png",
+      "background": "assets/levels/prolog.png",
+      "music": "billiger nervoeser 8-bit Hafensound",
+      "goal": "An der Grenzkontrolle vorbei zum Scanner.",
+      "required_hotspots": [
+        {
+          "id": "grenzbeamter",
+          "kind": "npc",
+          "label": "Grenzbeamter"
+        },
+        {
+          "id": "scanner",
+          "kind": "exit",
+          "label": "Scanner",
+          "locked_until_flag": "prolog_solved",
+          "goto": "kapitel1"
+        },
+        {
+          "id": "snackautomat",
+          "kind": "flavor",
+          "label": "Snackautomat"
+        },
+        {
+          "id": "sitzbank",
+          "kind": "flavor",
+          "label": "Sitzbank"
+        }
+      ],
+      "locked_feedback": {
+        "arthur": "Der Scanner ist noch zu. Story of my life, honestly.",
+        "beat": "Gesperrt. Noch."
+      },
+      "flavor": {
+        "snackautomat": {
+          "arthur": "Chips fuer den Preis der Wuerde. Tempting.",
+          "beat": "Ueberteuert. Logisch."
+        },
+        "sitzbank": {
+          "arthur": "Diese Bank hat mehr durchgemacht als mein Ex Manuel.",
+          "beat": "Eine Bank. Wartet. Wie ich."
+        }
+      },
+      "dialogues": {
+        "beat": {
+          "entry": [
+            {
+              "speaker": "Grenzbeamter",
+              "line": "Kofferkontrolle."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "diskutieren",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Wieso."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Routinekontrolle."
+                },
+                {
+                  "speaker": "Beat",
+                  "line": "Ineffizient."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Sir, oeffnen Sie einfach den Koffer."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "SCHWEIGEN",
+              "label": "schweigen",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Beat schaut ihn einfach an. Lange Pause."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Warum schauen Sie mich so an."
+                },
+                {
+                  "speaker": "*",
+                  "line": "Beat schweigt weiter. Noch laengere Pause."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Okay. Gehen Sie einfach."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "set_flag": "prolog_solved"
+                  },
+                  {
+                    "unlock_hotspot": "scanner"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "C",
+              "label": "belehren",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Kontrolle basiert auf Respekt."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Das ist ein Hafen."
+                },
+                {
+                  "speaker": "Beat",
+                  "line": "Eben."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Was?"
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            }
+          ]
+        },
+        "arthur": {
+          "entry": [
+            {
+              "speaker": "Grenzbeamter",
+              "line": "Kofferkontrolle."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "erklaeren",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Ganz ehrlich? Kontrolle ist schwierig fuer mich, weil mein Ex Manuel einmal mein Handy durchsucht hat und das war wahnsinnig toxisch aber gleichzeitig frage ich mich manchmal ob Grenzen ueberhaupt real sind oder eher emotional und genau DAS erinnert mich brutal an Gazpacho weil kalte Suppe ja irgendwie auch Vertrauen ist und-"
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "GEHEN SIE."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "set_flag": "prolog_solved"
+                  },
+                  {
+                    "unlock_hotspot": "scanner"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "B",
+              "label": "flirten",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Sie haben wahnsinnig beruhigende Augen."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Danke?"
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "C",
+              "label": "ignorieren",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Arthur schaut einfach aufs Handy."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Sir?"
+                },
+                {
+                  "speaker": "*",
+                  "line": "Arthur ignoriert ihn weiter."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Hallo?"
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "D",
+              "label": "ueberdramatisieren",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Ich spuere extrem schlechte Energie in diesem Raum."
+                },
+                {
+                  "speaker": "Grenzbeamter",
+                  "line": "Das ist Neonlicht."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "kapitel1",
+      "type": "room",
+      "title": "Kapitel 1 - Partydeck",
+      "intro_card": "assets/intro/kapitel1.png",
+      "background": "assets/levels/kapitel1.png",
+      "music": "billiger uebersteuerter 8-bit Eurodance",
+      "goal": "Luca Exoticas Armband erhalten und in den VIP-Bereich kommen.",
+      "required_hotspots": [
+        {
+          "id": "luca",
+          "kind": "npc",
+          "label": "Luca Exotica"
+        },
+        {
+          "id": "handtuch",
+          "kind": "item",
+          "label": "Handtuch",
+          "gives_item": "handtuch",
+          "consume_hotspot_after_take": true
+        },
+        {
+          "id": "whirlpool",
+          "kind": "target",
+          "label": "Whirlpool"
+        },
+        {
+          "id": "cocktailbar",
+          "kind": "flavor",
+          "label": "Cocktailbar"
+        },
+        {
+          "id": "vip_ausgang",
+          "kind": "exit",
+          "label": "VIP-Ausgang",
+          "locked_until_flag": "armband_erhalten",
+          "goto": "kapitel2"
+        }
+      ],
+      "locked_feedback": {
+        "arthur": "Der VIP-Bereich. Ohne Armband? Absolutely not, babe.",
+        "beat": "VIP. Kein Zutritt. Noch nicht."
+      },
+      "flavor": {
+        "cocktailbar": {
+          "arthur": "Cocktails. Ich bin emotional schon leicht angetrunken vom Vibe.",
+          "beat": "Alkohol. Senkt Kontrolle. Abgelehnt."
+        }
+      },
+      "puzzle": {
+        "beat": "Dialogoptionen bringen NICHTS. Loesung: handtuch nehmen -> use(handtuch, whirlpool) -> Flag whirlpool_overflow -> dann Dialog Luca -> Option SCHWEIGEN verzweigt jetzt auf solve -> Armband.",
+        "arthur": "Loesung: Dialog Luca -> Option A (erklaeren) -> Luca zermuerbt -> solve gibt Armband direkt.",
+        "use_actions": [
+          {
+            "item": "handtuch",
+            "target": "whirlpool",
+            "lines": [
+              {
+                "speaker": "*",
+                "line": "Beat legt das Handtuch ueber die Whirlpool-Duese. Der Whirlpool laeuft ueber."
+              },
+              {
+                "speaker": "Luca",
+                "line": "MEINE SANDALEN!"
+              }
+            ],
+            "effects": [
+              {
+                "set_flag": "whirlpool_overflow"
+              }
+            ]
+          }
+        ]
+      },
+      "dialogues": {
+        "beat": {
+          "_hotspot": "luca",
+          "entry": [
+            {
+              "speaker": "Luca",
+              "line": "Nur Menschen mit Tiefe bekommen mein Armband."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "diskutieren",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Was bedeutet Tiefe."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Emotionale Sichtbarkeit."
+                },
+                {
+                  "speaker": "Beat",
+                  "line": "Aha."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "B",
+              "label": "zermuerben",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Wie alt bist du."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "29."
+                },
+                {
+                  "speaker": "Beat",
+                  "line": "Sicher."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Ja?"
+                },
+                {
+                  "speaker": "Beat",
+                  "line": "Nein."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "SCHWEIGEN",
+              "label": "schweigen",
+              "branch_on_flag": "whirlpool_overflow",
+              "if_false": {
+                "lines": [
+                  {
+                    "speaker": "*",
+                    "line": "Beat schaut Luca einfach an."
+                  },
+                  {
+                    "speaker": "Luca",
+                    "line": "Warum bist du so intensiv."
+                  }
+                ],
+                "result": {
+                  "type": "none"
+                }
+              },
+              "if_true": {
+                "lines": [
+                  {
+                    "speaker": "*",
+                    "line": "Beat schaut Luca einfach an. Luca steht knoecheltief im Wasser."
+                  },
+                  {
+                    "speaker": "Luca",
+                    "line": "Nimm einfach das Armband."
+                  }
+                ],
+                "result": {
+                  "type": "solve",
+                  "effects": [
+                    {
+                      "give_item": "armband"
+                    },
+                    {
+                      "set_flag": "armband_erhalten"
+                    },
+                    {
+                      "unlock_hotspot": "vip_ausgang"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "D",
+              "label": "belehren",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Zu viel Schmuck wirkt unsicher."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Oh mein Gott."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            }
+          ]
+        },
+        "arthur": {
+          "_hotspot": "luca",
+          "entry": [
+            {
+              "speaker": "Luca",
+              "line": "Das Armband ist exklusiv."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "erklaeren",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Ganz ehrlich? Du erinnerst mich brutal an einen Mann aus Sitges und das meine ich positiv, weil viele Menschen haben schoene Gesichter aber keine emotionale Temperatur und genau DAS merkt man bei dir sofort obwohl ich normalerweise niemandem vertraue der aktiv Netzhemden traegt weil das oft ein Zeichen von Bindungsangst ist und-"
+                },
+                {
+                  "speaker": "*",
+                  "line": "Luca hoert irgendwann einfach auf zuzuhoeren. Arthur redet weiter."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "set_flag": "arthur_luca_zermuerbt"
+                  },
+                  {
+                    "give_item": "armband"
+                  },
+                  {
+                    "set_flag": "armband_erhalten"
+                  },
+                  {
+                    "unlock_hotspot": "vip_ausgang"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "B",
+              "label": "flirten",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Du hast brutal schoene Schultern."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Ich weiss."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "C",
+              "label": "ignorieren",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Arthur schaut an Luca vorbei."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Hallo?"
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "D",
+              "label": "unterbrechen",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Wait sorry aber deine Aura hat gerade komplett gewechselt."
+                },
+                {
+                  "speaker": "Luca",
+                  "line": "Was?"
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "kapitel2",
+      "type": "room",
+      "title": "Kapitel 2 - Dinner",
+      "intro_card": "assets/intro/kapitel2.png",
+      "background": "assets/levels/kapitel2.png",
+      "music": "billiger MIDI-Jazz",
+      "goal": "Mit Brot am Kellner vorbei zum Captain gelangen.",
+      "required_hotspots": [
+        {
+          "id": "kellner",
+          "kind": "npc",
+          "label": "Kellner",
+          "blocks": "captain"
+        },
+        {
+          "id": "telefon",
+          "kind": "npc",
+          "label": "Telefon",
+          "label_locked": "Telefon (klingelt)"
+        },
+        {
+          "id": "brotkorb",
+          "kind": "item",
+          "label": "Brotkorb",
+          "gives_item": "brot",
+          "available_after_flag": "telefon_geloest"
+        },
+        {
+          "id": "captain",
+          "kind": "exit",
+          "label": "Captain",
+          "locked_until_flag": "kellner_isst",
+          "goto": "kapitel3"
+        }
+      ],
+      "locked_feedback": {
+        "arthur": "Der Kellner steht im Weg. Sehr selbstbewusst fuer jemanden mit dieser Frisur.",
+        "beat": "Kellner blockiert. Hindernis."
+      },
+      "first_interaction": {
+        "trigger": "Erster Klick auf Kellner ODER auf Captain (solange kellner_isst nicht gesetzt)",
+        "lines": [
+          {
+            "speaker": "Kellner",
+            "line": "Private Veranstaltung."
+          },
+          {
+            "speaker": "*",
+            "line": "Das Telefon an der Wand klingelt."
+          }
+        ],
+        "effects": [
+          {
+            "set_flag": "telefon_klingelt"
+          },
+          {
+            "unlock_hotspot": "telefon"
+          }
+        ]
+      },
+      "puzzle": {
+        "common": "Kellner blockiert Captain. Erst Telefondialog loesen (richtige Option) -> Flag telefon_geloest + Brotkorb verfuegbar -> Brot nehmen -> use(brot, kellner) -> Kellner isst -> Captain frei.",
+        "use_actions": [
+          {
+            "item": "brot",
+            "target": "kellner",
+            "requires_flag": "telefon_geloest",
+            "lines": [
+              {
+                "speaker": "*",
+                "line": "Die Spielfigur reicht dem Kellner ein Broetchen. Der Kellner beginnt zu essen. Der Durchgang wird frei."
+              }
+            ],
+            "effects": [
+              {
+                "remove_item": "brot"
+              },
+              {
+                "set_flag": "kellner_isst"
+              },
+              {
+                "unlock_hotspot": "captain"
+              }
+            ]
+          }
+        ]
+      },
+      "dialogues": {
+        "beat": {
+          "_hotspot": "telefon",
+          "requires_flag": "telefon_klingelt",
+          "entry": [
+            {
+              "speaker": "Arthur",
+              "line": "Heeey Beat omg ich muss dir SO viel erzaehlen."
+            },
+            {
+              "speaker": "Beat",
+              "line": "Kurz."
+            },
+            {
+              "speaker": "Arthur",
+              "line": "Also zuerst mal war ich damals in Ibiza und honestly das war emotional komplett crazy-"
+            },
+            {
+              "speaker": "Beat",
+              "line": "Arthur."
+            },
+            {
+              "speaker": "Arthur",
+              "line": "Und dann dachte ich vielleicht sollte ich meine ganze Brand repositionieren weil literally niemand versteht meine Aura richtig-"
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "\"Spaeter.\"",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Arthur redet einfach weiter."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "B",
+              "label": "\"Interessiert mich nicht.\"",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Wow okay rude."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "C",
+              "label": "\"Arthur, wie sieht es mit deiner Homepage aus?\"",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Arthur, wie sieht es mit deiner Homepage aus?"
+                },
+                {
+                  "speaker": "Arthur",
+                  "line": "OH MY GOD wait - I'll call you back."
+                },
+                {
+                  "speaker": "*",
+                  "line": "Arthur legt sofort auf. Der Kellner schaut irritiert Richtung Telefon."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "set_flag": "telefon_geloest"
+                  },
+                  {
+                    "unlock_hotspot": "brotkorb"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "arthur": {
+          "_hotspot": "telefon",
+          "requires_flag": "telefon_klingelt",
+          "entry": [
+            {
+              "speaker": "Beat",
+              "line": "Notfall."
+            },
+            {
+              "speaker": "Arthur",
+              "line": "Omg Beat what happened??"
+            },
+            {
+              "speaker": "Beat",
+              "line": "Schlimm."
+            },
+            {
+              "speaker": "Arthur",
+              "line": "Is someone dead??"
+            },
+            {
+              "speaker": "Beat",
+              "line": "Fast."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "\"Was ist passiert?\"",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Kompliziert."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "B",
+              "label": "\"Okay ich hoere zu.\"",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Beat erklaert irgendeinen Militaerquatsch."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "ENDE",
+              "label": "Sofort Gespraech beenden",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Arthur beendet das Gespraech mitten im Satz. Der Kellner schaut irritiert Richtung Telefon."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "set_flag": "telefon_geloest"
+                  },
+                  {
+                    "unlock_hotspot": "brotkorb"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "kapitel3",
+      "type": "room",
+      "title": "Kapitel 3 - Finale (Partydeck, Sonnenuntergang)",
+      "intro_card": "assets/intro/kapitel3.png",
+      "background": "assets/levels/kapitel3.png",
+      "music": "langsame kitschige 8-bit Loveballade",
+      "goal": "Den Captain emotional brechen.",
+      "note": "Finale spielt auf dem Partydeck, NICHT auf der Bruecke.",
+      "required_hotspots": [
+        {
+          "id": "captain",
+          "kind": "npc",
+          "label": "Captain"
+        },
+        {
+          "id": "dj_luca",
+          "kind": "flavor",
+          "label": "DJ Luca"
+        },
+        {
+          "id": "whirlpool",
+          "kind": "flavor",
+          "label": "Whirlpool"
+        }
+      ],
+      "flavor": {
+        "dj_luca": {
+          "arthur": "Luca legt auf. Ironischerweise hoert mir zum ersten Mal jemand NICHT zu.",
+          "beat": "Luca. Laute Musik. Ablenkung."
+        },
+        "whirlpool": {
+          "arthur": "Wasser. Erinnert mich an etwas. Sag jetzt nichts, Arthur.",
+          "beat": "Whirlpool. Schon wieder."
+        }
+      },
+      "dialogues": {
+        "beat": {
+          "_hotspot": "captain",
+          "entry": [
+            {
+              "speaker": "Captain",
+              "line": "Was wollen Sie."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "belehren",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "Disziplin haette das verhindert."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Bitte gehen Sie."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "SCHWEIGEN",
+              "label": "schweigen",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Beat schaut ihn einfach an."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Warum machen Sie das."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "C",
+              "label": "anschreien",
+              "lines": [
+                {
+                  "speaker": "Beat",
+                  "line": "KONTROLLE. FEHLT."
+                },
+                {
+                  "speaker": "*",
+                  "line": "Captain erschrickt komplett."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Okay. Sie gewinnen."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "ending": "beat"
+                  },
+                  {
+                    "goto": "win"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "arthur": {
+          "_hotspot": "captain",
+          "entry": [
+            {
+              "speaker": "Captain",
+              "line": "Bitte nicht."
+            }
+          ],
+          "options": [
+            {
+              "id": "A",
+              "label": "flirten",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "Honestly du bist wahnsinnig attraktiv wenn du emotional erschoepft bist."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Bitte."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            },
+            {
+              "id": "B",
+              "label": "erklaeren",
+              "lines": [
+                {
+                  "speaker": "Arthur",
+                  "line": "To be honest ich glaube Menschen unterschaetzen komplett wie wichtig Zuhoeren ist weil mein Ex Manuel literally nie zugehoert hat und das war emotional exhausting aber gleichzeitig hat mich genau das an Mallorca erinnert weil wir dort einen Airfryer gekauft haben obwohl niemand im Urlaub einen Airfryer braucht und-"
+                },
+                {
+                  "speaker": "*",
+                  "line": "Captain nimmt die Hand vors Gesicht. Arthur redet weiter."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Okay. Bitte. Reicht."
+                }
+              ],
+              "result": {
+                "type": "solve",
+                "effects": [
+                  {
+                    "ending": "arthur"
+                  },
+                  {
+                    "goto": "win"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "C",
+              "label": "ignorieren",
+              "lines": [
+                {
+                  "speaker": "*",
+                  "line": "Arthur schaut aus dem Fenster."
+                },
+                {
+                  "speaker": "Captain",
+                  "line": "Reden Sie bitte einfach weiter damit es vorbei ist."
+                }
+              ],
+              "result": {
+                "type": "none"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "win",
+      "type": "ending",
+      "music": "Triumph-Sting, dann Titel-Loop",
+      "endings": {
+        "arthur": {
+          "background": "assets/winner/arthur.png",
+          "caption": "ARTHUR WINS"
+        },
+        "beat": {
+          "background": "assets/winner/beat.png",
+          "caption": "BEAT WINS"
+        }
+      },
+      "on_click": {
+        "goto": "start"
+      },
+      "notes": "Endbild abhaengig vom gewaehlten Charakter. Klick irgendwo -> zurueck zum Startbildschirm (Replay)."
+    }
+  ]
+};

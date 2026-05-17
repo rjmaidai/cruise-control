@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cruise Control — hotspots.json",
+  "description": "Vom Hotspot-Editor exportiert. Koordinaten normalisiert 0..1, Ursprung oben-links, bezogen auf das unverzerrte Hintergrundbild.",
+  "type": "object",
+  "required": ["screens"],
+  "properties": {
+    "_format": { "const": "cruise-control.hotspots/v1" },
+    "_note": { "type": "string" },
+    "screens": {
+      "type": "object",
+      "description": "Key = Screen-id aus gameflow.json (start, prolog, kapitel1, kapitel2, kapitel3).",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "x", "y", "w", "h"],
+          "properties": {
+            "id":    { "type": "string", "description": "muss zu gameflow.json passen (z.B. 'grenzbeamter')" },
+            "label": { "type": "string" },
+            "kind":  { "type": "string", "enum": ["select","npc","item","target","exit","flavor","custom"] },
+            "x": { "type": "number", "minimum": 0, "maximum": 1 },
+            "y": { "type": "number", "minimum": 0, "maximum": 1 },
+            "w": { "type": "number", "minimum": 0, "maximum": 1 },
+            "h": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "_format": "cruise-control.hotspots/v1",
+    "screens": {
+      "prolog": [
+        { "id": "grenzbeamter", "label": "Grenzbeamter", "kind": "npc",  "x": 0.10, "y": 0.42, "w": 0.22, "h": 0.40 },
+        { "id": "scanner",      "label": "Scanner",      "kind": "exit", "x": 0.41, "y": 0.18, "w": 0.16, "h": 0.62 }
+      ]
+    }
+  }
+}
