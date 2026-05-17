@@ -298,13 +298,19 @@
       "goal": "Mit Brot am Kellner vorbei zum Captain gelangen.",
       "required_hotspots": [
         { "id": "kellner",  "kind": "npc",    "label": "Kellner", "blocks": "captain" },
-        { "id": "telefon",  "kind": "npc",    "label": "Telefon", "label_locked": "Telefon (klingelt)" },
+        { "id": "telefon",  "kind": "npc",    "label": "Telefon", "label_locked": "Telefon (klingelt)", "available_after_flag": "telefon_klingelt" },
         { "id": "brotkorb", "kind": "item",   "label": "Brotkorb", "gives_item": "brot", "available_after_flag": "telefon_geloest" },
         { "id": "captain",  "kind": "exit",   "label": "Captain", "locked_until_flag": "kellner_isst", "goto": "kapitel3" }
       ],
       "locked_feedback": {
         "arthur": "Der Kellner steht im Weg. Sehr selbstbewusst fuer jemanden mit dieser Frisur.",
         "beat": "Kellner blockiert. Hindernis."
+      },
+      "flavor": {
+        "kellner": {
+          "arthur": "Er steht einfach da. Wahnsinnig stoische Energie.",
+          "beat": "Kellner. Statisch."
+        }
       },
       "first_interaction": {
         "trigger": "Erster Klick auf Kellner ODER auf Captain (solange kellner_isst nicht gesetzt)",

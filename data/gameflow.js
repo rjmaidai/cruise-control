@@ -701,7 +701,8 @@ window.GAMEFLOW = {
           "id": "telefon",
           "kind": "npc",
           "label": "Telefon",
-          "label_locked": "Telefon (klingelt)"
+          "label_locked": "Telefon (klingelt)",
+          "available_after_flag": "telefon_klingelt"
         },
         {
           "id": "brotkorb",
@@ -721,6 +722,12 @@ window.GAMEFLOW = {
       "locked_feedback": {
         "arthur": "Der Kellner steht im Weg. Sehr selbstbewusst fuer jemanden mit dieser Frisur.",
         "beat": "Kellner blockiert. Hindernis."
+      },
+      "flavor": {
+        "kellner": {
+          "arthur": "Er steht einfach da. Wahnsinnig stoische Energie.",
+          "beat": "Kellner. Statisch."
+        }
       },
       "first_interaction": {
         "trigger": "Erster Klick auf Kellner ODER auf Captain (solange kellner_isst nicht gesetzt)",

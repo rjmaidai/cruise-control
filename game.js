@@ -380,7 +380,17 @@ async function onHotspotClick(id){
   }
 
   if(hdef.kind === 'npc'){
-    await openDialog(def, hdef);
+    const block = def.dialogues && def.dialogues[State.character];
+    const dialogReady = !!block
+      && (!block._hotspot || block._hotspot === hdef.id)
+      && (!block.requires_flag || State.flags.has(block.requires_flag) || State.unlocked.has(hdef.id));
+    if(dialogReady){
+      await openDialog(def, hdef);
+    } else {
+      // NPC has nothing more to say right now — show flavor if defined, else stay silent
+      const flav = def.flavor && def.flavor[id] && def.flavor[id][State.character];
+      if(flav) await speakLockedFeedback(flav);
+    }
     return;
   }
 
